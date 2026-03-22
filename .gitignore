@@ -1,0 +1,12 @@
+# Database
+data/tracker.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Virtual environment
+venv/
+.venv/
