@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from backend.api.titles import router as titles_router
+from backend.api.chapters import router as chapters_router
 
 app = FastAPI(
     title="Reading Tracker API",
@@ -9,6 +10,7 @@ app = FastAPI(
 
 # Include routers
 app.include_router(titles_router, prefix="/titles", tags=["Titles"])
+app.include_router(chapters_router, prefix="/chapters", tags=["Chapters"])
 
 @app.get("/")
 def root():
