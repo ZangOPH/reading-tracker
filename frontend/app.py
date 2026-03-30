@@ -1,5 +1,5 @@
 import streamlit as st
-from api_client import get_titles, get_chapters, get_latest_chapter, update_title, delete_title, log_chapter
+from api_client import get_titles, get_chapters, get_latest_chapter, update_title, delete_title, log_chapter, get_title_genres, get_title_tags
 
 # Page config
 st.set_page_config(
@@ -145,9 +145,13 @@ elif page == "📖 My Library":
             ):
                 # Display current details
                 col1, col2 = st.columns(2)
+                genres = get_title_genres(title["id"])
+                tags = get_title_tags(title["id"])
                 with col1:
                     st.write(f"**Status:** {title['status'].replace('_', ' ').title()}")
                     st.write(f"**Format:** {title['format'].replace('_', ' ').title()}")
+                    st.write(f"**Genres:** {', '.join([g['name'] for g in genres]) or 'None'}")
+                    st.write(f"**Tags:** {', '.join([t['name'] for t in tags]) or 'None'}")
                     st.write(f"**Chapters Logged:** {len(get_chapters(title['id']))}")
                     st.write(f"**Rating:** {title['rating']}/5" if title['rating'] else "**Rating:** Not rated")
                 with col2:
