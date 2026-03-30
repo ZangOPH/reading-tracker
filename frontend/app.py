@@ -1,5 +1,5 @@
 import streamlit as st
-from api_client import get_titles, get_chapters, get_latest_chapter
+from api_client import get_titles, get_chapters, get_latest_chapter, update_title, delete_title
 
 # Page config
 st.set_page_config(
@@ -94,7 +94,6 @@ elif page == "📖 My Library":
     st.title("📖 My Library")
     st.markdown("---")
 
-    # Filters
     col1, col2 = st.columns(2)
     with col1:
         status_filter = st.selectbox(
@@ -104,10 +103,10 @@ elif page == "📖 My Library":
     with col2:
         format_filter = st.selectbox(
             "Filter by Format",
-            ["All", "manga", "manhwa", "manhua", "web_novel", "light_novel", "book", "comic", "audiobook"]
+            ["All", "manga", "manhwa", "manhua", "web_novel",
+             "light_novel", "book", "comic", "audiobook"]
         )
 
-    # Fetch titles
     status = None if status_filter == "All" else status_filter
     format = None if format_filter == "All" else format_filter
     titles = get_titles(status=status, format=format)
@@ -119,7 +118,12 @@ elif page == "📖 My Library":
     else:
         st.write(f"**{len(titles)} title(s) found**")
         for title in titles:
-            with st.expander(f"{title['title']} — {title['format'].replace('_', ' ').title()} — {title['status'].replace('_', ' ').title()}"):
+            with st.expander(
+                f"{title['title']} — "
+                f"{title['format'].replace('_', ' ').title()} — "
+                f"{title['status'].replace('_', ' ').title()}"
+            ):
+                # Display current details
                 col1, col2 = st.columns(2)
                 with col1:
                     st.write(f"**Status:** {title['status'].replace('_', ' ').title()}")
@@ -130,6 +134,48 @@ elif page == "📖 My Library":
                     st.write(f"**Finished:** {title['finish_date'] or 'Not set'}")
                     if title['notes']:
                         st.write(f"**Notes:** {title['notes']}")
+
+                st.markdown("---")
+
+                # Edit form
+                with st.form(f"edit_{title['id']}"):
+                    st.markdown("**Edit Title**")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        new_status = st.selectbox(
+                            "Status",
+                            ["reading", "completed", "plan_to_read", "dropped"],
+                            index=["reading", "completed", "plan_to_read", "dropped"].index(title["status"])
+                        )
+                        new_rating = st.slider("Rating", 0, 5, title["rating"] or 0)
+                    with col2:
+                        new_notes = st.text_area("Notes", value=title["notes"] or "")
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        save = st.form_submit_button("💾 Save Changes")
+                    with col2:
+                        delete = st.form_submit_button("🗑️ Delete Title")
+
+                    if save:
+                        result = update_title(title["id"], {
+                            "status": new_status,
+                            "rating": new_rating if new_rating > 0 else None,
+                            "notes": new_notes if new_notes else None
+                        })
+                        if result:
+                            st.success("✅ Title updated successfully!")
+                            st.rerun()
+                        else:
+                            st.error("Something went wrong.")
+
+                    if delete:
+                        result = delete_title(title["id"])
+                        if result:
+                            st.success("🗑️ Title deleted.")
+                            st.rerun()
+                        else:
+                            st.error("Something went wrong.")
 
 elif page == "➕ Add Title":
     st.title("➕ Add Title")
