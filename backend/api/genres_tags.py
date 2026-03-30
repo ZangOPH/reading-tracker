@@ -161,3 +161,23 @@ def get_title_tags(title_id: int):
     tags = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return tags
+
+@router.delete("/genres/{genre_id}")
+def delete_genre(genre_id: int):
+    """Delete a genre entirely."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM genres WHERE id = ?", (genre_id,))
+    conn.commit()
+    conn.close()
+    return {"message": "Genre deleted successfully"}
+
+@router.delete("/tags/{tag_id}")
+def delete_tag(tag_id: int):
+    """Delete a tag entirely."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM tags WHERE id = ?", (tag_id,))
+    conn.commit()
+    conn.close()
+    return {"message": "Tag deleted successfully"}

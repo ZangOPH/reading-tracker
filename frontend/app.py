@@ -1,5 +1,5 @@
 import streamlit as st
-from api_client import get_titles, get_chapters, get_latest_chapter, update_title, delete_title, log_chapter, get_title_genres, get_title_tags
+from api_client import *
 
 # Page config
 st.set_page_config(
@@ -132,7 +132,77 @@ elif page == "📖 My Library":
     titles = get_titles(status=status, format=format)
 
     st.markdown("---")
+    with st.expander("⚙️ Manage Genres & Tags", expanded=True):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**Genres**")
+            existing_genres = get_genres()
+            if existing_genres:
+                st.write(", ".join([g["name"] for g in existing_genres]))
+            else:
+                st.write("No genres yet")
+            
+            new_genre_name = st.text_input("Add new genre", placeholder="e.g. Isekai")
+            if st.button("➕ Add Genre"):
+                if new_genre_name:
+                    result = create_genre(new_genre_name)
+                    if result:
+                        st.success(f"✅ Genre '{new_genre_name}' created!")
+                        st.rerun()
+                    else:
+                        st.error("Genre already exists or something went wrong.")
 
+            if existing_genres:
+                st.markdown("**Remove Genre**")
+                genre_to_remove = st.selectbox(
+                    "Select genre to remove",
+                    options=[g["name"] for g in existing_genres],
+                    key="remove_genre_select"
+                )
+                if st.button("🗑️ Remove Genre"):
+                    genre_id = next(g["id"] for g in existing_genres if g["name"] == genre_to_remove)
+                    result = delete_genre(genre_id)
+                    if result:
+                        st.success(f"✅ Genre '{genre_to_remove}' removed!")
+                        st.rerun()
+                    else:
+                        st.error("Something went wrong.")
+        with col2:
+            st.markdown("**Tags**")
+            existing_tags = get_tags()
+            if existing_tags:
+                st.write(", ".join([t["name"] for t in existing_tags]))
+            else:
+                st.write("No tags yet")
+
+            new_tag_name = st.text_input("Add new tag", placeholder="e.g. Overpowered MC")
+            if st.button("➕ Add Tag"):
+                if new_tag_name:
+                    result = create_tag(new_tag_name)
+                    if result:
+                        st.success(f"✅ Tag '{new_tag_name}' created!")
+                        st.rerun()
+                    else:
+                        st.error("Tag already exists or something went wrong.")
+
+            if existing_tags:
+                st.markdown("**Remove Tag**")
+                tag_to_remove = st.selectbox(
+                    "Select tag to remove",
+                    options=[t["name"] for t in existing_tags],
+                    key="remove_tag_select"
+                )
+                if st.button("🗑️ Remove Tag"):
+                    tag_id = next(t["id"] for t in existing_tags if t["name"] == tag_to_remove)
+                    result = delete_tag(tag_id)
+                    if result:
+                        st.success(f"✅ Tag '{tag_to_remove}' removed!")
+                        st.rerun()
+                    else:
+                        st.error("Something went wrong.")
+                                
+    st.markdown("---")
     if not titles:
         st.info("No titles found.")
     else:
@@ -172,6 +242,17 @@ elif page == "📖 My Library":
                             ["reading", "completed", "plan_to_read", "dropped"],
                             index=["reading", "completed", "plan_to_read", "dropped"].index(title["status"])
                         )
+                        new_genres = st.multiselect(
+                            "Genres",
+                            options=[g["name"] for g in get_genres()],
+                            default=[g["name"] for g in genres]
+                        )
+                        new_tags = st.multiselect(
+                            "Tags",
+                            options=[t["name"] for t in get_tags()],
+                            default=[t["name"] for t in tags]
+                        )
+
                         new_rating = st.slider("Rating", 0, 5, title["rating"] or 0)
                     with col2:
                         new_notes = st.text_area("Notes", value=title["notes"] or "")
@@ -188,8 +269,25 @@ elif page == "📖 My Library":
                             "rating": new_rating if new_rating > 0 else None,
                             "notes": new_notes if new_notes else None
                         })
+
                         if result:
-                            st.success("✅ Title updated successfully!")
+                            # Update genres
+                            current_genre_ids = {g["id"] for g in genres}
+                            new_genre_ids = {g["id"] for g in get_genres() if g["name"] in new_genres}
+                            for gid in new_genre_ids - current_genre_ids:
+                                assign_genre_to_title(gid, title["id"])
+                            for gid in current_genre_ids - new_genre_ids:
+                                remove_genre_from_title(gid, title["id"])
+
+                            # Update tags
+                            current_tag_ids = {t["id"] for t in tags}
+                            new_tag_ids = {t["id"] for t in get_tags() if t["name"] in new_tags}
+                            for tid in new_tag_ids - current_tag_ids:
+                                assign_tag_to_title(tid, title["id"])
+                            for tid in current_tag_ids - new_tag_ids:
+                                remove_tag_from_title(tid, title["id"])
+
+                            st.success("✅ Changes saved.")
                             st.rerun()
                         else:
                             st.error("Something went wrong.")

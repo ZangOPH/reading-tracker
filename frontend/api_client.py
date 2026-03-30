@@ -66,3 +66,43 @@ def get_title_tags(title_id):
     """Get tags for a title."""
     response = requests.get(f"{BASE_URL}/library/titles/{title_id}/tags")
     return response.json() if response.status_code == 200 else []
+
+def assign_genre_to_title(genre_id, title_id):
+    """Assign a genre to a title."""
+    response = requests.post(f"{BASE_URL}/library/genres/{genre_id}/titles/{title_id}")
+    return response.json() if response.status_code == 200 else None
+
+def remove_genre_from_title(genre_id, title_id):
+    """Remove a genre from a title."""
+    response = requests.delete(f"{BASE_URL}/library/genres/{genre_id}/titles/{title_id}")
+    return response.json() if response.status_code == 200 else None
+
+def assign_tag_to_title(tag_id, title_id):
+    """Assign a tag to a title."""
+    response = requests.post(f"{BASE_URL}/library/tags/{tag_id}/titles/{title_id}")
+    return response.json() if response.status_code == 200 else None
+
+def remove_tag_from_title(tag_id, title_id):
+    """Remove a tag from a title."""
+    response = requests.delete(f"{BASE_URL}/library/tags/{tag_id}/titles/{title_id}")
+    return response.json() if response.status_code == 200 else None
+
+def create_genre(name):
+    """Create a new genre."""
+    response = requests.post(f"{BASE_URL}/library/genres", json={"name": name})
+    return response.json() if response.status_code == 200 else None
+
+def create_tag(name):
+    """Create a new tag."""
+    response = requests.post(f"{BASE_URL}/library/tags", json={"name": name})
+    return response.json() if response.status_code == 200 else None
+
+def delete_genre(genre_id):
+    """Delete a genre entirely."""
+    response = requests.delete(f"{BASE_URL}/library/genres/{genre_id}")
+    return response.json() if response.status_code == 200 else None
+
+def delete_tag(tag_id):
+    """Delete a tag entirely."""
+    response = requests.delete(f"{BASE_URL}/library/tags/{tag_id}")
+    return response.json() if response.status_code == 200 else None
