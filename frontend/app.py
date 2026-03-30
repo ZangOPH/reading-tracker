@@ -1,5 +1,5 @@
 import streamlit as st
-from api_client import get_titles, get_chapters, get_latest_chapter, update_title, delete_title
+from api_client import get_titles, get_chapters, get_latest_chapter, update_title, delete_title, log_chapter
 
 # Page config
 st.set_page_config(
@@ -87,6 +87,26 @@ if page == "🏠 Dashboard":
                         st.write(f"**Logged at:** {last['read_at']}")
                     else:
                         st.write("No progress logged yet")
+                    
+                    log_next_chapter = st.button("Log Progress", key=f"log_{title['id']}")
+                    if log_next_chapter:
+                        if latest:
+                            last_entry = latest[0]
+                            if last_entry.get("chapter_number") is not None:
+                                data = {"chapter_number": last_entry["chapter_number"] + 1}
+                            elif last_entry.get("page_number") is not None:
+                                data = {"page_number": last_entry["page_number"] + 1}
+                            elif last_entry.get("duration_minutes") is not None:
+                                data = {"duration_minutes": last_entry["duration_minutes"]}
+                        else:
+                            data = {"chapter_number": 1.0}
+
+                        result = log_chapter(title["id"], data)
+                        if result:
+                            st.success(f"✅ Progress logged for '{title['title']}'!")
+                            st.rerun()
+                        else:
+                            st.error(f"Failed to log progress for '{title['title']}'!")
         else:
             st.write("Nothing currently being read.")
 
@@ -128,6 +148,7 @@ elif page == "📖 My Library":
                 with col1:
                     st.write(f"**Status:** {title['status'].replace('_', ' ').title()}")
                     st.write(f"**Format:** {title['format'].replace('_', ' ').title()}")
+                    st.write(f"**Chapters Logged:** {len(get_chapters(title['id']))}")
                     st.write(f"**Rating:** {title['rating']}/5" if title['rating'] else "**Rating:** Not rated")
                 with col2:
                     st.write(f"**Started:** {title['start_date'] or 'Not set'}")
