@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 from api_client import *
 
 # Page config
@@ -255,7 +256,26 @@ elif page == "📖 My Library":
 
                         new_rating = st.slider("Rating", 0, 5, title["rating"] or 0)
                     with col2:
-                        new_notes = st.text_area("Notes", value=title["notes"] or "")
+                        new_start_date = st.date_input(
+                            "Start Date",
+                            value=pd.to_datetime(title["start_date"]).date() if title["start_date"] else None
+                        )
+                        new_finish_date = st.date_input(
+                            "Finish Date",
+                            value=pd.to_datetime(title["finish_date"]).date() if title["finish_date"] else None
+                        )
+                        new_narrator = st.text_input(
+                            "Narrator (audiobooks only)",
+                            value=title["narrator"] or ""
+                        )
+                        new_source_url = st.text_input(
+                            "Source URL",
+                            value=title["source_url"] or ""
+                        )
+                        new_notes = st.text_area(
+                            "Notes",
+                            value=title["notes"] or ""
+                        )
 
                     col1, col2 = st.columns(2)
                     with col1:
@@ -267,7 +287,11 @@ elif page == "📖 My Library":
                         result = update_title(title["id"], {
                             "status": new_status,
                             "rating": new_rating if new_rating > 0 else None,
-                            "notes": new_notes if new_notes else None
+                            "notes": new_notes if new_notes else None,
+                            "start_date": str(new_start_date) if new_start_date else None,
+                            "finish_date": str(new_finish_date) if new_finish_date else None,
+                            "narrator": new_narrator if new_narrator else None,
+                            "source_url": new_source_url if new_source_url else None
                         })
 
                         if result:
