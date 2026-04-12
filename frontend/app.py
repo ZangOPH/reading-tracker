@@ -10,15 +10,21 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Initialise session state for page navigation
+if "page" not in st.session_state:
+    st.session_state["page"] = "🏠 Dashboard"
+
 # Sidebar navigation
 st.sidebar.title("📚 Reading Tracker")
 st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigate",
-    ["🏠 Dashboard", "📖 My Library", "➕ Add Title", "📝 Log Progress", "🔍 Search", "📊 Statistics"]
+    ["🏠 Dashboard", "📖 My Library", "➕ Add Title", "📝 Log Progress", "🔍 Search", "📊 Statistics"],
+    index=["🏠 Dashboard", "📖 My Library", "➕ Add Title", "📝 Log Progress", "🔍 Search", "📊 Statistics"].index(st.session_state["page"]),
+    key="nav_radio"
 )
-
+st.session_state["page"] = st.session_state["nav_radio"]
 st.sidebar.markdown("---")
 st.sidebar.caption("Phase 1 — Personal Tracker")
 
@@ -378,7 +384,13 @@ elif page == "➕ Add Title":
 elif page == "📝 Log Progress":
     st.title("📝 Log Progress")
     st.markdown("---")
-
+    
+    if st.button("← Back to My Library"):
+        st.session_state["page"] = "📖 My Library"
+        st.rerun()
+    
+    st.markdown("---")
+    
     from api_client import log_chapter, get_latest_chapter
 
     # Get currently reading titles
