@@ -15,7 +15,7 @@ st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigate",
-    ["🏠 Dashboard", "📖 My Library", "➕ Add Title", "📝 Log Progress", "🔍 Search"]
+    ["🏠 Dashboard", "📖 My Library", "➕ Add Title", "📝 Log Progress", "🔍 Search", "📊 Statistics"]
 )
 
 st.sidebar.markdown("---")
@@ -486,3 +486,107 @@ elif page == "🔍 Search":
                         st.write(f"Page {latest['page_number']} — {latest['read_at'][:10]}")
                     elif latest.get("duration_minutes"):
                         st.write(f"{latest['duration_minutes']} mins — {latest['read_at'][:10]}")
+
+elif page == "📊 Statistics":
+    st.title("📊 Statistics")
+    st.markdown("---")
+
+    import plotly.express as px
+    import pandas as pd
+
+    titles = get_titles()
+
+    if not titles:
+        st.info("No data yet. Add some titles to see your statistics.")
+    else:
+        df = pd.DataFrame(titles)
+
+        # --- Row 1 — Key metrics ---
+        st.subheader("📈 Overview")
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Total Titles", len(df))
+        col2.metric("Completed", len(df[df["status"] == "completed"]))
+        col3.metric("Currently Reading", len(df[df["status"] == "reading"]))
+        col4.metric("Plan to Read", len(df[df["status"] == "plan_to_read"]))
+
+        st.markdown("---")
+
+        # --- Row 2 — Format and Status charts ---
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.subheader("📚 Titles by Format")
+            format_counts = df["format"].value_counts().reset_index()
+            format_counts.columns = ["Format", "Count"]
+            format_counts["Format"] = format_counts["Format"].str.replace("_", " ").str.title()
+            fig = px.bar(format_counts, x="Format", y="Count", color="Format")
+            fig.update_layout(showlegend=False, height=350)
+            st.plotly_chart(fig, use_container_width=True)
+
+        with col2:
+            st.subheader("📊 Titles by Status")
+            status_counts = df["status"].value_counts().reset_index()
+            status_counts.columns = ["Status", "Count"]
+            status_counts["Status"] = status_counts["Status"].str.replace("_", " ").str.title()
+            fig2 = px.pie(status_counts, names="Status", values="Count")
+            fig2.update_layout(height=350)
+            st.plotly_chart(fig2, use_container_width=True)
+
+        st.markdown("---")
+
+        # --- Row 3 — Ratings ---
+        st.subheader("⭐ Ratings Analysis")
+        rated_df = df[df["rating"].notna()]
+
+        if rated_df.empty:
+            st.write("No ratings yet.")
+        else:
+            col1, col2 = st.columns(2)
+
+            with col1:
+                avg_by_format = rated_df.groupby("format")["rating"].mean().reset_index()
+                avg_by_format.columns = ["Format", "Average Rating"]
+                avg_by_format["Format"] = avg_by_format["Format"].str.replace("_", " ").str.title()
+                avg_by_format["Average Rating"] = avg_by_format["Average Rating"].round(2)
+                fig3 = px.bar(avg_by_format, x="Format", y="Average Rating", color="Format")
+                fig3.update_layout(showlegend=False, height=350, yaxis_range=[0, 5])
+                st.plotly_chart(fig3, use_container_width=True)
+
+            with col2:
+                st.subheader("🏆 Top Rated Titles")
+                top_rated = rated_df.nlargest(5, "rating")[["title", "format", "rating"]]
+                top_rated["format"] = top_rated["format"].str.replace("_", " ").str.title()
+                top_rated.columns = ["Title", "Format", "Rating"]
+                st.dataframe(top_rated, use_container_width=True, hide_index=True)
+
+        st.markdown("---")
+
+        # --- Row 4 — Chapter activity ---
+        st.subheader("📖 Reading Activity")
+        all_chapters = []
+        for _, title in df.iterrows():
+            chapters = get_chapters(title["id"])
+            for chapter in chapters:
+                chapter["title_name"] = title["title"]
+                chapter["format"] = title["format"]
+                all_chapters.append(chapter)
+
+        if all_chapters:
+            chapters_df = pd.DataFrame(all_chapters)
+            chapters_df["read_at"] = pd.to_datetime(chapters_df["read_at"])
+            chapters_df["date"] = chapters_df["read_at"].dt.date
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Total Chapter Logs", len(chapters_df))
+            with col2:
+                most_active = chapters_df.groupby("title_name").size().idxmax()
+                st.metric("Most Logged Title", most_active)
+
+            daily_activity = chapters_df.groupby("date").size().reset_index()
+            daily_activity.columns = ["Date", "Chapters Logged"]
+            fig4 = px.line(daily_activity, x="Date", y="Chapters Logged", title="Daily Reading Activity")
+            fig4.update_layout(height=350)
+            st.plotly_chart(fig4, use_container_width=True)
+        else:
+            st.write("No chapter logs yet.")
